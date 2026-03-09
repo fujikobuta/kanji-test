@@ -375,7 +375,7 @@
 
     <script>
         // QUESTIONS_DATA_START
-        const embeddedQuestions = [{"q": "へいほう（いくさのやりかた）", "n": 1, "a": "兵法", "l": "", "practice": true, "p": 1}, {"q": "エプロンを作るので生地を　＜さいだん＞　する", "n": 2, "a": "裁断", "l": "裁も断も「たつ」", "practice": true, "p": 1}, {"q": "ロボットの操作を　＜あやまる（間違える）＞", "n": 3, "a": "誤る", "l": "謝る×", "practice": true, "p": 1}, {"q": "＜ほうち＞国家。", "n": 4, "a": "法治", "l": "", "practice": true, "p": 1}, {"q": "庭にある植木の葉の先から朝つゆが＜たれて＞光る。", "n": 5, "a": "垂れて", "l": "", "practice": false, "p": 1}, {"q": "薬が＜きく＞。", "n": 6, "a": "効く", "l": "", "practice": false, "p": 1}, {"q": "＜はらん＞にとんだ一生を送る。", "n": 7, "a": "波乱", "l": "", "practice": false, "p": 1}, {"q": "＜かいしん＞の演技で満足そうな顔をする。", "n": 1, "a": "会心", "l": "", "practice": false, "p": 2}, {"q": "目と＜はな＞の先にある学校。", "n": 2, "a": "鼻", "l": "", "practice": false, "p": 2}, {"q": "製品の　＜ひんしつ＞　を管理する", "n": 3, "a": "品質", "l": "", "practice": false, "p": 2}, {"q": "こたい　液体　気体", "n": 1, "a": "固体", "l": "", "practice": false, "p": 3}, {"q": "チェーンソーマンは　＜かげき＞　な表現が多い", "n": 2, "a": "過激", "l": "", "practice": false, "p": 3}, {"q": "展覧会に自作の　＜もくはんが＞　を出品する", "n": 1, "a": "木版画", "l": "", "practice": false, "p": 4}, {"q": "いっさくねん　（さくねんのまえのとし＝おととし）", "n": 2, "a": "一昨年", "l": "", "practice": false, "p": 4}];
+        const embeddedQuestions = [{"q": "エプロンを作るので生地を　＜さいだん＞　する", "n": 1, "a": "裁断", "l": "裁も断も「たつ」", "practice": true, "p": 1}, {"q": "ロボットの操作を　＜あやまる（間違える）＞", "n": 2, "a": "誤る", "l": "謝る×", "practice": true, "p": 1}, {"q": "＜ほうち＞国家。", "n": 3, "a": "法治", "l": "", "practice": true, "p": 1}, {"q": "庭にある植木の葉の先から朝つゆが＜たれて＞光る。", "n": 4, "a": "垂れて", "l": "", "practice": false, "p": 1}, {"q": "薬が＜きく＞。", "n": 5, "a": "効く", "l": "", "practice": false, "p": 1}, {"q": "＜はらん＞にとんだ一生を送る。", "n": 6, "a": "波乱", "l": "", "practice": false, "p": 1}, {"q": "＜かいしん＞の演技で満足そうな顔をする。", "n": 1, "a": "会心", "l": "", "practice": false, "p": 2}, {"q": "目と＜はな＞の先にある学校。", "n": 2, "a": "鼻", "l": "", "practice": false, "p": 2}, {"q": "製品の　＜ひんしつ＞　を管理する", "n": 3, "a": "品質", "l": "", "practice": false, "p": 2}, {"q": "こたい　液体　気体", "n": 1, "a": "固体", "l": "", "practice": false, "p": 3}, {"q": "チェーンソーマンは　＜かげき＞　な表現が多い", "n": 2, "a": "過激", "l": "", "practice": false, "p": 3}, {"q": "展覧会に自作の　＜もくはんが＞　を出品する", "n": 1, "a": "木版画", "l": "", "practice": false, "p": 4}, {"q": "いっさくねん　（さくねんのまえのとし＝おととし）", "n": 2, "a": "一昨年", "l": "", "practice": false, "p": 4}];
         // QUESTIONS_DATA_END
 
         let questions = [];
@@ -608,39 +608,63 @@
             resultArea.innerText = text;
         }
 
-        document.getElementById('line-btn').addEventListener('click', () => {
+        document.getElementById('line-btn').addEventListener('click', async () => {
             const text = resultArea.innerText;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    openLine(text);
-                }).catch(() => {
-                    fallbackCopy(text);
-                });
-            } else {
-                fallbackCopy(text);
-            }
-        });
 
-        function fallbackCopy(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
+            // 今日の日付でファイル名を生成
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            const fileName = `漢字テスト結果_${dateStr}.txt`;
+
+            // Web Share API（ファイル添付）が使える場合
+            if (navigator.canShare) {
+                try {
+                    const file = new File([text], fileName, { type: 'text/plain' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: '漢字テスト結果',
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        // ファイル共有失敗時はテキスト共有にフォールバック
+                    } else {
+                        return; // ユーザーがキャンセル
+                    }
+                }
+            }
+
+            // Web Share API（テキスト）が使える場合
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: '漢字テスト結果',
+                        text: text,
+                    });
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return; // ユーザーがキャンセル
+                }
+            }
+
+            // フォールバック：クリップボードコピー＋LINEを開く
             try {
-                document.execCommand('copy');
-                openLine(text);
+                await navigator.clipboard.writeText(text);
             } catch (e) {
-                alert("コピー失敗");
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
             }
-            document.body.removeChild(textArea);
-        }
-
-        function openLine(text) {
             window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
             setTimeout(() => {
                 alert("結果をコピーしました！LINEに貼り付けて送ってください。");
             }, 500);
-        }
+        });
 
         document.getElementById('restart-btn').addEventListener('click', () => {
             if (confirm("最初から やりなおす？")) {
