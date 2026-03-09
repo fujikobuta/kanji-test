@@ -608,63 +608,39 @@
             resultArea.innerText = text;
         }
 
-        document.getElementById('line-btn').addEventListener('click', async () => {
+        document.getElementById('line-btn').addEventListener('click', () => {
             const text = resultArea.innerText;
-
-            // 今日の日付でファイル名を生成
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-            const fileName = `漢字テスト結果_${dateStr}.txt`;
-
-            // Web Share API（ファイル添付）が使える場合
-            if (navigator.canShare) {
-                try {
-                    const file = new File([text], fileName, { type: 'text/plain' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            files: [file],
-                            title: '漢字テスト結果',
-                        });
-                        return;
-                    }
-                } catch (e) {
-                    if (e.name !== 'AbortError') {
-                        // ファイル共有失敗時はテキスト共有にフォールバック
-                    } else {
-                        return; // ユーザーがキャンセル
-                    }
-                }
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    openLine(text);
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
             }
+        });
 
-            // Web Share API（テキスト）が使える場合
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: '漢字テスト結果',
-                        text: text,
-                    });
-                    return;
-                } catch (e) {
-                    if (e.name === 'AbortError') return; // ユーザーがキャンセル
-                }
-            }
-
-            // フォールバック：クリップボードコピー＋LINEを開く
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
             try {
-                await navigator.clipboard.writeText(text);
-            } catch (e) {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
                 document.execCommand('copy');
-                document.body.removeChild(textArea);
+                openLine(text);
+            } catch (e) {
+                alert("コピー失敗");
             }
+            document.body.removeChild(textArea);
+        }
+
+        function openLine(text) {
             window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
             setTimeout(() => {
                 alert("結果をコピーしました！LINEに貼り付けて送ってください。");
             }, 500);
-        });
+        }
 
         document.getElementById('restart-btn').addEventListener('click', () => {
             if (confirm("最初から やりなおす？")) {
